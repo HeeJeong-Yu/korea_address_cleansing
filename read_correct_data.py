@@ -10,7 +10,8 @@ class ReadCorrectData:
 
     def __init__(self):
         self._folder_path = None
-        self.col = None
+        self.original_col = None
+        self.need_col = None
         self.del_word = None
         self.df = None
 
@@ -18,16 +19,15 @@ class ReadCorrectData:
     @classmethod
     def _load_column_mappings(cls, key):
         if cls._col_mapping == None:
-            data = load_json(cls._col_mapping_path)
-            data = load_json(get_config_data("paths", "col_mapping"))
+            cls._col_mapping = load_json(cls._col_mapping_path)
 
-            def str_to_int(col):
-                col = {int(k):v for k, v in col.items()}
-                return col
-
-            cls._col_mapping = {key: str_to_int(value) for key, value in data.items()}
-        
         return cls._col_mapping[key]
+    
+    def split_col(self, col):
+        self.need_col = col['need_cols']
+
+        oc = col['original_cols']
+        self.original_col = {int(key):value for key, value in oc.items()}
 
     # 폴더 이름 찾기
     def _fild_folder_name(self, word):
@@ -52,7 +52,9 @@ class ReadCorrectData:
         for filename in tqdm(filelist, desc=f"{data} 데이터 읽는 중"):
             file = os.path.join(self._folder_path, filename)
             new_df = read_csv(file)
-            new_df.rename(columns=self.col, inplace=True)
+            new_df.rename(columns=self.original_col, inplace=True)
+            new_df = new_df[self.need_col]
+
             df_list.append(new_df)
 
         if df_list:
@@ -63,14 +65,13 @@ class ReadCorrectData:
 
     # 메인
     def run(self, foldername, del_word):
-        self.col = self._load_column_mappings(foldername)
+        self.split_col(self._load_column_mappings(foldername))
+
         self.del_word = del_word
         self._find_folder_path(foldername)
 
         filelist = self.find_filelist()
         self.df = self.read_data(filelist, foldername)
-
-        print(len(self.df))
 
 if __name__ == "__main__":
     roadname_foldername = get_config_data("foldernames", "roadname"); roadname_del_word = get_config_data("del_words", "roadname")

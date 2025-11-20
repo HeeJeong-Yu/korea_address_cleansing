@@ -47,8 +47,7 @@ def read_csv(file):
     
 
 # 로그 출력
-def log(text, return_string=False):
+def log(text):
     now = time.strftime(r"%Y/%m/%d %H:%M:%S")
     res = f"[{now}] {text}"
-    if not return_string: print(res, flush=True)
-    else: return res
+    print(res, flush=True)
