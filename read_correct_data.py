@@ -4,82 +4,77 @@ import os, json
 from utils import *
 
 class ReadCorrectData:
-    CORRECT_DATA_PATH = get_config_data("path", "correct_data")
-    COL_MAPPING_PATH =  get_config_data("path", "col_mapping")
-    ROADNAME_FILE_NAME = "도로명주소"
-    DETAILED_FILE_NAME = "상세주소"
-    ROADNAME_DEL_WORD = "jibun"   # 도로명주소 한글- jibun: 지번 주소
-    DETAILED_DEL_WORD = "rnspbt"  # 상세주소 표시- rnspbd: 시군구용, rnspbt: 건축물대장
+    _correct_data_path = get_config_data("paths", "correct_data")
+    _col_mapping_path =  get_config_data("paths", "col_mapping")
+    _col_mapping = None
 
     def __init__(self):
-        self._roadname_path = None
-        self._detailed_path = None
-
-        self.roadname_col = None
-        self.detailed_col = None
+        self._folder_path = None
+        self.col = None
+        self.del_word = None
+        self.df = None
 
     # 컬럼명 찾기
-    def load_column_mappings(self):
-        data = load_json(self.CORRECT_DATA_PATH)
-        roadname_col, detailed_col = data['roadname'], data['detailed']
+    @classmethod
+    def _load_column_mappings(cls, key):
+        if cls._col_mapping == None:
+            data = load_json(cls._col_mapping_path)
+            data = load_json(get_config_data("paths", "col_mapping"))
 
-        def str_to_int(col):
-            col = {int(k):v for k, v in col.items()}
-            return col
+            def str_to_int(col):
+                col = {int(k):v for k, v in col.items()}
+                return col
+
+            cls._col_mapping = {key: str_to_int(value) for key, value in data.items()}
         
-        return str_to_int(roadname_col), str_to_int(detailed_col)
+        return cls._col_mapping[key]
 
-    # 도로명주소 한글. 상세주소 표시. 폴더 이름 찾기
-    def fild_folder_name(self):
-        for name in os.listdir(self.CORRECT_DATA_PATH):
-            if self.ROADNAME_FILE_NAME in name: roadname_folder_name = name
-            elif self.DETAILED_FILE_NAME in name: detailed_folder_name = name
-
-        return roadname_folder_name, detailed_folder_name
+    # 폴더 이름 찾기
+    def _fild_folder_name(self, word):
+        for name in os.listdir(self._correct_data_path):
+            if word in name: 
+                return name
     
-    def _find_folder_path(self):
-        roadname_folder, detailed_folder = self.fild_folder_name()
-        self._roadname_path = os.path.join(self.CORRECT_DATA_PATH, roadname_folder)
-        self._detailed_path = os.path.join(self.CORRECT_DATA_PATH, detailed_folder)
+    def _find_folder_path(self, word):
+        self._folder_path = os.path.join(self._correct_data_path, self._fild_folder_name(word))
 
     # 타겟 파일리스트 찾기
-    def find_filelist(self, folder_path, word):
-        filelist = os.listdir(folder_path)
-        filelist = [filename for filename in filelist if word not in filename]
+    def find_filelist(self):
+        filelist = os.listdir(self._folder_path)
+        filelist = [filename for filename in filelist if self.del_word not in filename]
         
         return filelist
     
     # 데이터 파일 읽기
-    def read_data(self, folder_path, filelist, col, data):
+    def read_data(self, filelist, data):
         df_list = []
 
         for filename in tqdm(filelist, desc=f"{data} 데이터 읽는 중"):
-            file = os.path.join(folder_path, filename)
+            file = os.path.join(self._folder_path, filename)
             new_df = pd.read_csv(file, encoding="cp949", sep="|", header=None, low_memory=False)
-            new_df.rename(columns=col, inplace=True)
+            new_df.rename(columns=self.col, inplace=True)
             df_list.append(new_df)
 
-         # 4. 루프가 끝난 후, 리스트가 비어있지 않다면 단 한 번에 합칩니다.
         if df_list:
             df = pd.concat(df_list, ignore_index=True)
             return df
         
-        # 파일이 하나도 없을 경우 빈 DataFrame 반환
         return pd.DataFrame()   
 
     # 메인
-    def run(self):
-        self.roadname_col, self.detailed_col = self.load_column_mappings()
-        self._find_folder_path()
+    def run(self, foldername, del_word):
+        self.col = self._load_column_mappings(foldername)
+        self.del_word = del_word
+        self._find_folder_path(foldername)
 
-        roadname_filelist = self.find_filelist(self._roadname_path, self.ROADNAME_DEL_WORD)
-        detailed_filelist = self.find_filelist(self._detailed_path, self.DETAILED_DEL_WORD)
+        filelist = self.find_filelist()
+        self.df = self.read_data(filelist, foldername)
 
-        roadname_df = self.read_data(self._roadname_path, roadname_filelist, self.roadname_col, self.ROADNAME_FILE_NAME)
-        detailed_df = self.read_data(self._detailed_path, detailed_filelist, self.detailed_col, self.DETAILED_FILE_NAME)
-
-
+        print(len(self.df))
 
 if __name__ == "__main__":
-    test = ReadCorrectData()
-    test.run()
+    roadname_foldername = get_config_data("foldernames", "roadname"); roadname_del_word = get_config_data("del_words", "roadname")
+    detailed_foldername = get_config_data("foldernames", "detailed"); detailed_del_word = get_config_data("del_words", "detailed")
+
+    roadname = ReadCorrectData(); roadname.run(roadname_foldername, roadname_del_word); roadname_df = roadname.df; del roadname
+    detailed = ReadCorrectData(); detailed.run(detailed_foldername, detailed_del_word); detailed_df = detailed.df; del detailed

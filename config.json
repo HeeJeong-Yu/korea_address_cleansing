@@ -3,5 +3,15 @@
     "paths": {
         "correct_data": "./data/correct_data",
         "col_mapping": "./data/col_mapping.json"
+    },
+
+    "foldernames": {
+        "roadname": "도로명주소",
+        "detailed": "상세주소"
+    },
+    "del_words": {
+        "roadname" : "jibun",   
+        "detailed" : "rnspbd",
+        "_comment" : "detailed- rnspbd: 시군구용, rnspbt: 건축물대장"
     }
 }
