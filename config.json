@@ -2,13 +2,19 @@
 {
     "paths": {
         "correct_data": "./data/correct_data",
-        "col_mapping": "./data/col_mapping.json"
+        "col_mapping": "./data/col_mapping.json",
+        "output": "./output"
     },
 
     "foldernames": {
         "roadname": "도로명주소",
         "detailed": "상세주소"
     },
+
+    "filename":{
+        "correct_data_summary": "correct_data_summary.csv"
+    },
+
     "del_words": {
         "roadname" : "jibun",   
         "detailed" : "rnspbd",
