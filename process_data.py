@@ -46,13 +46,30 @@ def concat_adddress(df):
 
     return address_series
 
+def select_buildingName(df):
+    return np.where(
+        df['건축물대장건물명'] != '',
+        df['건축물대장건물명'], 
+        
+        np.where(
+            df['시군구건물명'] != '',
+            df['시군구건물명'],
+            '' 
+        )
+    )
+
 def process_data(df):
     replace_to_empty(roadname_df)
     roadname_df = roadname_df.astype(str)
 
     # 법정읍면동명-> 법정동, 법정읍면으로 분리
     roadname_df = split_eup_myeon_dong(roadname_df)
-    roadname_df = roadname_df.drop(columns=['법정읍면동명'])
 
-    # 도로명주소 
+    # 필요한 컬럼 생성
+        # 도로명주소: 풀도로명주소 
+        # 건물명: 건축물대장건물명이 없을 경우, 시군구건물명으로 대체. 둘 다 없을 경우 공백
     roadname_df['도로명주소'] = concat_adddress(roadname_df)
+    roadname_df['건물명'] = select_buildingName(roadname_df)
+
+    # 필요없는 컬럼 삭제
+    roadname_df = roadname_df.drop(columns=['법정읍면동명', '건축물대장건물명', '시군구건물명'])
