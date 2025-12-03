@@ -24,19 +24,26 @@ def split_eup_myeon_dong(df, col="법정읍면동명"):
 
     return df
 
-def concat_adddress(df):
+def concat_address(df):
     def concat_str(col):
         return np.where(
             df[col].str.strip() != '', 
-            ' '+df[col], 
+            ' ' + df[col], 
             ''
         )
+
 
     address_series = df['시도명'].copy()
     address_series += concat_str('시군구명')
     address_series += concat_str('법정읍면')
+    address_series += ' ' + df['도로명'] 
 
-    address_series += ' ' + df['도로명'] + ' ' + df['건물본번']
+    underground_status = concat_str('지하여부')
+    address_series += np.where(
+        underground_status != '',
+        underground_status + df['건물본번'],
+        ' ' + df['건물본번']
+    )
 
     address_series += np.where(
         df['건물부번'].str.strip() != '', 
@@ -72,4 +79,4 @@ def process_data(df):
     roadname_df['건물명'] = select_buildingName(roadname_df)
 
     # 필요없는 컬럼 삭제
-    roadname_df = roadname_df.drop(columns=['법정읍면동명', '건축물대장건물명', '시군구건물명'])
+    roadname_df = roadname_df.drop(columns=['법정읍면동명', '건축물대장건물명', '시군구건물명']) 
