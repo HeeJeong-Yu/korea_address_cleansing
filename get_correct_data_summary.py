@@ -3,13 +3,13 @@ from read_correct_data import *
 import os
 import numpy as np
 
-def replace_to_nan(df):
+def replace_to_nan(df: pd.DataFrame):
     df.replace(
         to_replace=[0, False, None], 
         value=np.nan,
         inplace=True)
 
-def calculate_data(df):
+def calculate_data(df:pd.DataFrame)-> pd.DataFrame:
     results = {}
     df_len = len(df)
 
@@ -26,7 +26,7 @@ def calculate_data(df):
 
     return pd.DataFrame(results)
 
-def save_dataframe(df, file_path):
+def save_dataframe(df: pd.DataFrame, file_path: str):
     try:
         if not file_path:
             df.to_csv(file_path, index=False, encoding='cp949')
@@ -35,14 +35,14 @@ def save_dataframe(df, file_path):
     except Exception as e:
         print(f"DF 저장 오류{file_path}: {e}")
 
-def check_path():
+def check_path()-> str:
     file_path = get_config_data("paths", "output")
     if not os.path.exists(file_path):
         os.makedirs(file_path)
     
     return os.path.join(file_path, get_config_data("filename", "correct_data_summary"))
 
-def get_correct_data_summary(roadname_df, detailed_df):
+def get_correct_data_summary(roadname_df: pd.DataFrame, detailed_df: pd.DataFrame):
     file_path = check_path()
     replace_to_nan(roadname_df); replace_to_nan(detailed_df)
 

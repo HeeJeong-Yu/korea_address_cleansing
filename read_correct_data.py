@@ -17,41 +17,49 @@ class ReadCorrectData:
 
     # 컬럼명 찾기
     @classmethod
-    def _load_column_mappings(cls, key):
+    def _load_column_mappings(cls, key: str):
         if cls._col_mapping == None:
             cls._col_mapping = load_json(cls._col_mapping_path)
 
         return cls._col_mapping[key]
     
-    def split_col(self, col):
+    def split_col(self, col: dict):
         self.need_col = col['need_cols']
 
         oc = col['original_cols']
         self.original_col = {int(key):value for key, value in oc.items()}
 
     # 폴더 이름 찾기
-    def _fild_folder_name(self, word):
+    def _fild_folder_name(self, word: str)-> str:
         for name in os.listdir(self._correct_data_path):
             if word in name: 
                 return name
     
-    def _find_folder_path(self, word):
+    def _find_folder_path(self, word: str):
         self._folder_path = os.path.join(self._correct_data_path, self._fild_folder_name(word))
 
     # 타겟 파일리스트 찾기
-    def find_filelist(self):
+    def find_filelist(self)-> list:
         filelist = os.listdir(self._folder_path)
         filelist = [filename for filename in filelist if self.del_word not in filename]
         
         return filelist
     
+    def read_csv(self, file: str)-> pd.DataFrame:
+        try:
+            df = pd.read_csv(file, encoding="cp949", sep="|", header=None, low_memory=False, quoting=csv.QUOTE_NONE)
+            return df
+        except Exception as e:
+            print(f"csv파일 읽기 오류({file}): {e}")
+            sys.exit(1)
+    
     # 데이터 파일 읽기
-    def read_data(self, filelist, data):
+    def read_data(self, filelist: list, data: str)-> pd.DataFrame:
         df_list = []
 
         for filename in tqdm(filelist, desc=f"{data} 데이터 읽는 중"):
             file = os.path.join(self._folder_path, filename)
-            new_df = read_csv(file)
+            new_df = self.read_csv(file)
             new_df.rename(columns=self.original_col, inplace=True)
             new_df = new_df[self.need_col]
 
@@ -64,7 +72,7 @@ class ReadCorrectData:
         return pd.DataFrame()   
 
     # 메인
-    def run(self, foldername, del_word):
+    def run(self, foldername: str, del_word: str):
         self.split_col(self._load_column_mappings(foldername))
 
         self.del_word = del_word
